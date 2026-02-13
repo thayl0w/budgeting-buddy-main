@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Savings Goals | Budgeting Buddy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css" />
+    <script src="../js/auth.js"></script>
+    <script src="../js/dataManager.js"></script>
+    <script src="../js/navbar.js"></script>
+    <script defer src="../js/savings.js"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50">
+    <!-- Navbar -->
+    <div id="navbar"></div>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Savings Goals</h1>
+            <p class="text-gray-600">Set and track your financial milestones</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Add Goal Form -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h2 class="text-xl font-semibold mb-4">Create New Goal</h2>
+                <form id="goal-form" class="space-y-4">
+                    <div>
+                        <label for="goalName" class="block font-medium">Goal Name</label>
+                        <input id="goalName" type="text" class="w-full mt-1 border px-3 py-2 rounded" />
+                    </div>
+                    <div>
+                        <label for="targetAmount" class="block font-medium">Target Amount</label>
+                        <input id="targetAmount" type="number" class="w-full mt-1 border px-3 py-2 rounded" />
+                    </div>
+                    <div>
+                        <label for="savedAmount" class="block font-medium">Saved Amount</label>
+                        <input id="savedAmount" type="number" class="w-full mt-1 border px-3 py-2 rounded" />
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Create
+                        Goal</button>
+                </form>
+            </div>
+
+            <!-- Overall Progress -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h2 class="text-xl font-semibold mb-4">Overall Progress</h2>
+                <div class="text-center bg-blue-50 p-4 rounded mb-6">
+                    <p class="text-blue-600 font-medium mb-1">Total Progress</p>
+                    <p id="total-progress-percent" class="text-3xl font-bold text-blue-700">0%</p>
+                    <div class="w-full bg-gray-200 rounded h-3 mt-2">
+                        <div id="overall-bar" class="bg-blue-500 h-3 rounded" style="width: 0%;"></div>
+                    </div>
+                    <p id="total-progress-text" class="text-sm text-gray-600 mt-2">$0 of $0</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-green-50 p-3 rounded">
+                        <p class="text-green-600 text-sm font-medium">Total Saved</p>
+                        <p id="total-saved" class="text-xl font-bold text-green-700">$0</p>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded">
+                        <p class="text-purple-600 text-sm font-medium">Active Goals</p>
+                        <p id="active-goals" class="text-xl font-bold text-purple-700">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Savings List -->
+        <div class="bg-white p-6 mt-8 rounded-xl shadow">
+            <h2 class="text-xl font-semibold mb-4">Your Savings Goals</h2>
+            <div id="goals-list" class="space-y-6"></div>
+            <div id="empty-message" class="text-center text-gray-500 py-12 hidden">
+                <p class="text-lg font-medium mb-2">No savings goals yet</p>
+                <p>Create your first savings goal to get started!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
+            <button id="close-profile-modal"
+                class="absolute top-2 right-2 text-gray-400 hover:text-gray-700">&times;</button>
+            <h2 class="text-2xl font-bold mb-4">Profile Information</h2>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-1">Name</label>
+                <div id="profile-name" class="p-2 bg-gray-100 rounded"></div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-1">Email</label>
+                <div id="profile-email" class="p-2 bg-gray-100 rounded"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Profile modal logic
+        const userInfoSection = document.getElementById('user-info');
+        if (userInfoSection) {
+            userInfoSection.style.cursor = 'pointer';
+            userInfoSection.addEventListener('click', (e) => {
+                if (e.target.classList.contains('logout-btn')) return;
+                if (
+                    e.target.id === 'user-info' ||
+                    e.target.id === 'user-name' ||
+                    e.target.id === 'user-initials' ||
+                    e.target.closest('#user-info')
+                ) {
+                    const modal = document.getElementById('profile-modal');
+                    if (modal) {
+                        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                        const nameDiv = document.getElementById('profile-name');
+                        const emailDiv = document.getElementById('profile-email');
+                        if (nameDiv) nameDiv.textContent = userData.name || '';
+                        if (emailDiv) emailDiv.textContent = userData.email || '';
+                        modal.classList.remove('hidden');
+                    }
+                }
+            });
+            const logoutBtn = userInfoSection.querySelector('.logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (window.auth && typeof window.auth.logout === 'function') {
+                        window.auth.logout();
+                    } else if (typeof auth !== 'undefined' && typeof auth.logout === 'function') {
+                        auth.logout();
+                    }
+                });
+            }
+        }
+        const closeBtn = document.getElementById('close-profile-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                document.getElementById('profile-modal').classList.add('hidden');
+            };
+        }
+    </script>
+</body>
+
+</html>
+
